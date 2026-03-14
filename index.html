@@ -128,6 +128,7 @@ width:150px;
 
 <div class="specs">
 <h3>My PC Specs</h3>
+
 <ul>
 <li>CPU: Ryzen 7 7435HS</li>
 <li>GPU: RTX 3050</li>
@@ -149,7 +150,9 @@ width:150px;
 <img id="cover" src="images/cover.png">
 </div>
 
-<audio id="music" src="audio/song.mp3"></audio>
+<audio id="music" preload="auto">
+<source src="./audio/song.mp3" type="audio/mpeg">
+</audio>
 
 <div class="controls">
 <button onclick="togglePlay()">⏯</button>
@@ -163,7 +166,6 @@ width:150px;
 </div>
 
 <script>
-
 const bg=document.getElementById("bg");
 
 document.addEventListener("mousemove",e=>{
@@ -176,52 +178,19 @@ const player=document.getElementById("music");
 const cover=document.getElementById("cover");
 const volume=document.getElementById("volume");
 
-player.volume = volume.value;
-
-volume.addEventListener("input",()=>{
-player.volume = volume.value;
-});
-
-let audioCtx;
-let analyser;
-let dataArray;
-let bufferLength;
-let source;
-let audioStarted=false;
-
-function startAudio(){
-audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-source = audioCtx.createMediaElementSource(player);
-analyser = audioCtx.createAnalyser();
-
-source.connect(analyser);
-analyser.connect(audioCtx.destination);
-
-analyser.fftSize = 256;
-
-bufferLength = analyser.frequencyBinCount;
-dataArray = new Uint8Array(bufferLength);
-
-draw();
-}
-
 function togglePlay(){
-
-if(!audioStarted){
-startAudio();
-audioStarted=true;
-}
-
 if(player.paused){
-player.play();
+player.play().catch(err => console.log(err));
 cover.style.animationPlayState="running";
 }else{
 player.pause();
 cover.style.animationPlayState="paused";
 }
-
 }
+
+volume.addEventListener("input",()=>{
+player.volume=volume.value;
+});
 
 const canvas=document.getElementById("visualizer");
 const ctx=canvas.getContext("2d");
@@ -229,12 +198,21 @@ const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=200;
 
+const audioCtx=new AudioContext();
+const source=audioCtx.createMediaElementSource(player);
+const analyser=audioCtx.createAnalyser();
+
+source.connect(analyser);
+analyser.connect(audioCtx.destination);
+
+analyser.fftSize=256;
+
+const bufferLength=analyser.frequencyBinCount;
+const dataArray=new Uint8Array(bufferLength);
+
 function draw(){
-
 requestAnimationFrame(draw);
-
 analyser.getByteFrequencyData(dataArray);
-
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
 for(let i=0;i<bufferLength;i++){
@@ -242,9 +220,9 @@ let barHeight=dataArray[i];
 ctx.fillStyle="white";
 ctx.fillRect(i*5,canvas.height-barHeight/2,3,barHeight);
 }
-
 }
 
+draw();
 </script>
 
 </body>
