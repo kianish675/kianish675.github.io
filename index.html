@@ -176,15 +176,7 @@ const player=document.getElementById("music");
 const cover=document.getElementById("cover");
 const volume=document.getElementById("volume");
 
-function togglePlay(){
-if(player.paused){
-player.play().catch(err => console.log(err));
-cover.style.animationPlayState="running";
-}else{
-player.pause();
-cover.style.animationPlayState="paused";
-}
-}
+player.volume=volume.value;
 
 volume.addEventListener("input",()=>{
 player.volume=volume.value;
@@ -196,21 +188,57 @@ const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth;
 canvas.height=200;
 
-const audioCtx=new AudioContext();
-const source=audioCtx.createMediaElementSource(player);
-const analyser=audioCtx.createAnalyser();
+let audioCtx;
+let analyser;
+let source;
+let dataArray;
+let bufferLength;
+let audioStarted=false;
+
+function startAudio(){
+audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+
+source=audioCtx.createMediaElementSource(player);
+analyser=audioCtx.createAnalyser();
 
 source.connect(analyser);
 analyser.connect(audioCtx.destination);
 
 analyser.fftSize=256;
 
-const bufferLength=analyser.frequencyBinCount;
-const dataArray=new Uint8Array(bufferLength);
+bufferLength=analyser.frequencyBinCount;
+dataArray=new Uint8Array(bufferLength);
+
+draw();
+}
+
+function togglePlay(){
+
+if(!audioStarted){
+startAudio();
+audioStarted=true;
+}
+
+if(audioCtx.state==="suspended"){
+audioCtx.resume();
+}
+
+if(player.paused){
+player.play().catch(e=>console.log(e));
+cover.style.animationPlayState="running";
+}else{
+player.pause();
+cover.style.animationPlayState="paused";
+}
+
+}
 
 function draw(){
+
 requestAnimationFrame(draw);
+
 analyser.getByteFrequencyData(dataArray);
+
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
 for(let i=0;i<bufferLength;i++){
@@ -218,9 +246,8 @@ let barHeight=dataArray[i];
 ctx.fillStyle="white";
 ctx.fillRect(i*5,canvas.height-barHeight/2,3,barHeight);
 }
-}
 
-draw();
+}
 </script>
 
 </body>
